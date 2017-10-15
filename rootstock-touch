@@ -206,7 +206,7 @@ case $PROJECT_ in
 		PROJECT=$PROJECT_
 		;;
 	ubports-touch)
-		EXTRA_PPAS="ci-train-ppa-service/stable-phone-overlay:1001 ubports-developers/overlay:1011"
+		EXTRA_PPAS="ci-train-ppa-service/stable-phone-overlay:1001"
 		PROJECT="ubuntu-touch"
 		;;
 esac
@@ -273,8 +273,8 @@ build_chroot()
 		echo "deb $MIRROR $SUITE main universe" >$CHROOT/etc/apt/sources.list
 		echo "deb $MIRROR $SUITE-updates main universe" >>$CHROOT/etc/apt/sources.list
 	fi
-	echo "deb http://ppa.launchpad.net/ubports-developers/overlay/ubuntu $SUITE main" >>$CHROOT/etc/apt/sources.list
-	do_chroot $CHROOT "apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6506B829CB0EE80B"
+	echo "deb http://repo.ubports.com/ xenial-7.1-caf-sudoku main" >>$CHROOT/etc/apt/sources.list
+	do_chroot $CHROOT "curl -L http://repo.ubports.com/keyring.gpg | sudo apt-key add -"
 	do_chroot $CHROOT "apt-get -y update"
 	if [ "$NATIVE_CHROOT" = "1" ]; then
 		do_chroot $CHROOT "apt-get -y install livecd-rootfs debootstrap qemu-user-static"
