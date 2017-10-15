@@ -274,6 +274,7 @@ build_chroot()
 		echo "deb $MIRROR $SUITE-updates main universe" >>$CHROOT/etc/apt/sources.list
 	fi
 	echo "deb http://repo.ubports.com/ xenial-7.1-caf-sudoku main" >>$CHROOT/etc/apt/sources.list
+	do_chroot $CHROOT "apt -y install curl"
 	do_chroot $CHROOT "curl -L http://repo.ubports.com/keyring.gpg | sudo apt-key add -"
 	do_chroot $CHROOT "apt-get -y update"
 	if [ "$NATIVE_CHROOT" = "1" ]; then
