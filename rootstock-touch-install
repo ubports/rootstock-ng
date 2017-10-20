@@ -90,6 +90,7 @@ prepare_ubuntu_system()
 
 cleanup()
 {
+	echo "Cleaning up... "
 	mount | grep -q $TMPMOUNT 2>/dev/null && umount $TMPMOUNT
 	cleanup_device
 	rm -rf $WORKDIR
@@ -101,6 +102,9 @@ cleanup_device()
 	[ -e $WORKDIR/device-clean ] && return
 	do_shell "umount /cache/system/ 2>/dev/null && rm -rf /cache/system 2>/dev/null"
 	do_shell "rm -f /recovery/$TARBALL"
+	if [ ! -z "$BUSYBOX_PUSH" ]; then
+		do_shell "rm $BUSYBOX 2>/dev/null"
+	fi
 	[ -e $WORKDIR ] && touch $WORKDIR/device-clean 2>/dev/null || true
 }
 
@@ -198,6 +202,7 @@ TMPMOUNT="$WORKDIR/tmpmount"
 if [ ! -z "$BUSYBOX_PUSH" ]; then
 	echo -n "Pushing Busybox to device ... "
 	send_busybox
+	echo "[done]"
 fi
 
 echo -n "transfering rootfs tarball ... "
