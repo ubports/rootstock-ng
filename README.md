@@ -22,7 +22,7 @@ The Android system.img is located in `out/target/product/[model]/` in your Haliu
 
 ### Options
 
-#### -b|busybox <path to Busybox binary>
+#### -b|--busybox <path to Busybox binary>
 
 Pushes a custom Busybox or Toybox binary to the device. This is later used when extracting the rootfs tarball. Use it when you're running into strange errors, such as `killed: out of memory` during the "unpacking rootfs tarball to system-image" step.
 
