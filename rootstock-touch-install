@@ -41,14 +41,13 @@ do_shell()
 convert_android_img()
 {
 	if file $SYSIMG | grep -v ": Linux rev 1.0 ext4" >/dev/null; then
-		simg2img $SYSIMG $WORKDIR/system.img.raw
-		mkdir $TMPMOUNT
-		mount -t ext4 -o loop $WORKDIR/system.img.raw $TMPMOUNT
-		make_ext4fs -l 120M $WORKDIR/system.img $TMPMOUNT >/dev/null 2>&1
-		SYSIMAGE=$WORKDIR/system.img
-	else
-		SYSIMAGE=$SYSIMG
+    echo -n "Converting from sparse ext4 image to mountable ext4 image... "
+    simg2img $SYSIMG tmp.img >/dev/null
+    resize2fs -M tmp.img >/dev/null 2>&1
+    mv tmp.img $SYSIMG
+		echo "[Done]"
 	fi
+	SYSIMAGE=$SYSIMG
 }
 
 check_mounts(){
@@ -76,8 +75,8 @@ prepare_ubuntu_system()
 
 	do_shell "dd if=/dev/zero of=/data/ubuntu.img seek=500K bs=4096 count=0 >/dev/null 2>&1"
 	do_shell "mkfs.ext2 -F /data/ubuntu.img >/dev/null 2>&1"
-	do_shell "mkdir -p /cache/system"
-	do_shell "mount -o loop /data/ubuntu.img /cache/system/"
+	do_shell "mkdir -p /data/system"
+	do_shell "mount -o loop /data/ubuntu.img /data/system/"
 
 	# system.img is the deprecated name, but we make link to ubuntu.img
 	do_shell "ln /data/ubuntu.img /data/system.img"
@@ -94,8 +93,8 @@ cleanup()
 cleanup_device()
 {
 	[ -e $WORKDIR/device-clean ] && return
-	do_shell "umount /cache/system/ 2>/dev/null && rm -rf /cache/system 2>/dev/null"
-	do_shell "rm -f /recovery/$TARBALL"
+	do_shell "umount /data/system/ 2>/dev/null && rm -rf /data/system 2>/dev/null"
+	do_shell "rm -f /data/recovery/$TARBALL"
 	[ -e $WORKDIR ] && touch $WORKDIR/device-clean 2>/dev/null || true
 }
 
@@ -181,53 +180,57 @@ WORKDIR=$(mktemp -d /tmp/rootstock-touch-install.XXXXX)
 TMPMOUNT="$WORKDIR/tmpmount"
 
 echo -n "transfering rootfs tarball ... "
-adb push $TARPATH /recovery/ >/dev/null 2>&1
+do_shell "mkdir /data/recovery/"
+adb push $TARPATH /data/recovery/
+sync
 echo "[done]"
 
 if [ ! -z "$CUST_TARPATH" ]; then
 	CUST_TARBALL=$(basename $CUST_TARPATH)
 	echo  -n "transferring custom tarball"
-	adb push $CUST_TARPATH /recovery/ >/dev/null 2>&1
+	adb push $CUST_TARPATH /data/recovery/ >/dev/null 2>&1
 	echo "[done]"
 fi
 
 echo -n "preparing system-image on device ... "
+sync
 prepare_ubuntu_system
+sync
 echo "[done]"
 
 echo -n "unpacking rootfs tarball to system-image ... "
-do_shell "cd /cache/system && zcat /recovery/$TARBALL | tar xf -"
-do_shell "mkdir -p /cache/system/android/firmware"
-do_shell "mkdir -p /cache/system/android/persist"
-do_shell "mkdir -p /cache/system/userdata"
-do_shell "[ -e /cache/system/SWAP.swap ] && mv /cache/system/SWAP.swap /data/SWAP.img"
+do_shell "cd /data/system && tar xf /data/recovery/$TARBALL"
+do_shell "mkdir -p /data/system/android/firmware"
+do_shell "mkdir -p /data/system/android/persist"
+do_shell "mkdir -p /data/system/userdata"
+do_shell "[ -e /data/system/SWAP.swap ] && mv /data/system/SWAP.swap /data/SWAP.img"
 for link in cache data factory firmware persist system; do
-	do_shell "cd /cache/system && ln -s /android/$link $link"
+	do_shell "cd /data/system && ln -s /android/$link $link"
 done
-do_shell "cd /cache/system/lib && ln -s /system/lib/modules modules"
-do_shell "cd /cache/system && ln -s /android/system/vendor vendor"
-do_shell "[ -e /cache/system/etc/mtab ] && rm /cache/system/etc/mtab"
-do_shell "cd /cache/system/etc && ln -s /proc/mounts mtab"
+do_shell "cd /data/system/lib && ln -s /system/lib/modules modules"
+do_shell "cd /data/system && ln -s /android/system/vendor vendor"
+do_shell "[ -e /data/system/etc/mtab ] && rm /data/system/etc/mtab"
+do_shell "cd /data/system/etc && ln -s /proc/mounts mtab"
 if [ ! -z "$WIPE_PATH" ]; then
-	do_shell "echo ' ' >/cache/system/$WIPE_PATH || true"
+	do_shell "echo ' ' >/data/system/$WIPE_PATH || true"
 fi
 echo "[done]"
 
 if [ ! -z "$CUST_TARPATH" ];then
 	echo -n "unpacking custom tarball"
-	do_shell "mkdir -p /cache/system/custom"
-	do_shell "cd /cache && xzcat /recovery/$CUST_TARBALL | tar xf -"
+	do_shell "mkdir -p /data/system/custom"
+	do_shell "cd /cache && xzcat /data/recovery/$CUST_TARBALL | tar xf -"
 	echo "[done]"
 fi
 
 echo -n "adding android system image to installation ... "
 convert_android_img
-ANDROID_DIR="/cache/system/var/lib/lxc/android/"
+ANDROID_DIR="/data/system/var/lib/lxc/android/"
 adb push $SYSIMAGE $ANDROID_DIR >/dev/null 2>&1
 echo "[done]"
 
 echo -n "enabling Mir ... "
-do_shell "touch /cache/system/home/phablet/.display-mir"
+do_shell "touch /data/system/home/phablet/.display-mir"
 echo "[done]"
 
 echo -n "cleaning up on device ... "
@@ -235,4 +238,4 @@ cleanup_device
 echo "[done]"
 
 echo "rebooting device"
-adb reboot
+#adb reboot
