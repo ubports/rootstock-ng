@@ -58,9 +58,6 @@ send_busybox() {
 
 check_mounts(){
 	MOUNTS=$(do_shell "cat /proc/mounts")
-	if ! echo $MOUNTS | grep -qs '/data/recovery'; then
-		do_shell "mount /data/recovery"
-	fi
 	if ! echo $MOUNTS | grep -qs '/data'; then
 		do_shell "mount /data"
 	fi
