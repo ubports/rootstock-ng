@@ -76,7 +76,7 @@ prepare_ubuntu_system()
 		echo -n "keep option set, keeping user data ... "
 	fi
 
-	do_shell "dd if=/dev/zero of=/data/ubuntu.img seek=500K bs=4096 count=0 >/dev/null 2>&1"
+	do_shell "dd if=/dev/zero of=/data/ubuntu.img seek=600K bs=4096 count=0 >/dev/null 2>&1"
 	do_shell "mkfs.ext2 -F /data/ubuntu.img >/dev/null 2>&1"
 	do_shell "mkdir -p /data/recovery/system"
 	do_shell "mount -o loop /data/ubuntu.img /data/recovery/system/"
