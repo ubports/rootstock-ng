@@ -76,7 +76,7 @@ prepare_ubuntu_system()
 		echo -n "keep option set, keeping user data ... "
 	fi
 
-	do_shell "dd if=/dev/zero of=/data/ubuntu.img seek=500K bs=4096 count=0 >/dev/null 2>&1"
+	do_shell "dd if=/dev/zero of=/data/ubuntu.img seek=600K bs=4096 count=0 >/dev/null 2>&1"
 	do_shell "mkfs.ext2 -F /data/ubuntu.img >/dev/null 2>&1"
 	do_shell "mkdir -p /data/recovery/system"
 	do_shell "mount -o loop /data/ubuntu.img /data/recovery/system/"
@@ -98,7 +98,7 @@ cleanup_device()
 {
 	[ -e $WORKDIR/device-clean ] && return
 	do_shell "umount /data/recovery/system/ 2>/dev/null && rm -rf /data/recovery/system 2>/dev/null"
-	do_shell "rm -f /recovery/$TARBALL"
+	do_shell "rm -f /data/$TARBALL"
 	if [ ! -z "$BUSYBOX_PUSH" ]; then
 		do_shell "rm $BUSYBOX 2>/dev/null"
 	fi
@@ -203,13 +203,13 @@ if [ ! -z "$BUSYBOX_PUSH" ]; then
 fi
 
 echo -n "transfering rootfs tarball ... "
-adb push $TARPATH /recovery/ >/dev/null 2>&1
+adb push $TARPATH /data/ >/dev/null 2>&1
 echo "[done]"
 
 if [ ! -z "$CUST_TARPATH" ]; then
 	CUST_TARBALL=$(basename $CUST_TARPATH)
 	echo  -n "transferring custom tarball"
-	adb push $CUST_TARPATH /recovery/ >/dev/null 2>&1
+	adb push $CUST_TARPATH /data/ >/dev/null 2>&1
 	echo "[done]"
 fi
 
@@ -218,7 +218,7 @@ prepare_ubuntu_system
 echo "[done]"
 
 echo -n "unpacking rootfs tarball to system-image ... "
-do_shell "cd /data/recovery/system && $BUSYBOX tar xf /recovery/$TARBALL"
+do_shell "cd /data/recovery/system && $BUSYBOX tar xf /data/$TARBALL"
 do_shell "mkdir -p /data/recovery/system/android/firmware"
 do_shell "mkdir -p /data/recovery/system/android/persist"
 do_shell "mkdir -p /data/recovery/system/userdata"
@@ -238,7 +238,7 @@ echo "[done]"
 if [ ! -z "$CUST_TARPATH" ];then
 	echo -n "unpacking custom tarball"
 	do_shell "mkdir -p /data/recovery/system/custom"
-	do_shell "cd /data/recovery && $BUSYBOX xzcat /recovery/$CUST_TARBALL | $BUSYBOX tar xf -"
+	do_shell "cd /data/recovery && $BUSYBOX xzcat /data/$CUST_TARBALL | $BUSYBOX tar xf -"
 	echo "[done]"
 fi
 
