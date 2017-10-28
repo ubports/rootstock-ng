@@ -104,7 +104,6 @@ cleanup_device()
 	if [ ! -z "$BUSYBOX_PUSH" ]; then
 		do_shell "rm $BUSYBOX 2>/dev/null"
 	fi
-	do_shell "rm -rf /data/recovery >/dev/null 2>&1"
 	do_shell "sync"
 	[ -e $WORKDIR ] && touch $WORKDIR/device-clean 2>/dev/null || true
 }
@@ -240,7 +239,7 @@ if [ ! -z "$WIPE_PATH" ]; then
 fi
 echo "[done]"
 
-if [ ! -z "$CUST_TARPATH" ];then
+if [ ! -z "$CUST_TARPATH" ]; then
 	echo -n "unpacking custom tarball"
 	do_shell "mkdir -p /data/recovery/system/custom"
 	do_shell "cd /data/recovery && $BUSYBOX xzcat /data/$CUST_TARBALL | $BUSYBOX tar xf -"
@@ -257,9 +256,15 @@ echo -n "enabling Mir ... "
 do_shell "touch /data/recovery/system/home/phablet/.display-mir"
 echo "[done]"
 
+echo -n "enabling SSH ... "
+do_shell "sed -i 's/PasswordAuthentication=no/PasswordAuthentication=yes/g' /data/recovery/system/etc/init/ssh.override"
+do_shell "sed -i 's/manual/start on startup/g' /data/recovery/system/etc/init/ssh.override"
+do_shell "$BUSYBOX chroot /data/recovery/system/ /usr/bin/passwd phablet"
+echo "[done]"
+
 echo -n "cleaning up on device ... "
 cleanup_device
 echo "[done]"
 
 echo "rebooting device"
-#adb reboot
+adb reboot
