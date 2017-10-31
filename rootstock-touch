@@ -4,7 +4,8 @@
 #  Copyright (c) 2014 Canonical
 #  Copyright (c) 2017 The UBports Project
 #
-#  Author: Oliver Grawert <ogra@canonical.com>
+#  Authors: Oliver Grawert <ogra@canonical.com>
+#           Marius Gripsgard <marius@ubports.com>
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License as
@@ -24,13 +25,13 @@
 
 set -e
 
+# NOTE: This is a vivid only version!!!
+
 # needs 6.5GB free diskspace for building
-# TODO:
-#       - allow single deb to be injected
 
 export LC_ALL=C
 
-SUITE="xenial"
+SUITE="vivid"
 ARCH="armhf"
 
 NOW=$(date +%Y%m%d)
@@ -64,6 +65,7 @@ trap cleanup 0 1 2 3 15
 
 usage()
 {
+    echo "VERSION: $SUITE"
 	echo "usage: $(basename $0)\n
 	-h|--help		this page
 	-a|--arch (i386|armhf|arm64)	pick an arch, default: armhf
@@ -111,6 +113,10 @@ while [ $# -gt 0 ]; do
 			DO_PPA=1
 			;;
 		-s|--series)
+		    if [ "$2" != $SUITE ]; then
+		        echo "This is $SUITE only version of rootstock"
+		        exit 1
+		    fi
 			[ -n "$2" ] && SUITE=$2 shift || usage
 			;;
 		-t|--type)
@@ -206,7 +212,7 @@ case $PROJECT_ in
 		PROJECT=$PROJECT_
 		;;
 	ubports-touch)
-		EXTRA_PPAS="ci-train-ppa-service/stable-phone-overlay:1001"
+		EXTRA_PPAS="ci-train-ppa-service/stable-phone-overlay:1001 ubports-developers/overlay:1011"
 		PROJECT="ubuntu-touch"
 		;;
 esac
@@ -273,7 +279,7 @@ build_chroot()
 		echo "deb $MIRROR $SUITE main universe" >$CHROOT/etc/apt/sources.list
 		echo "deb $MIRROR $SUITE-updates main universe" >>$CHROOT/etc/apt/sources.list
 	fi
-	echo "deb http://repo.ubports.com/ xenial main" >>$CHROOT/etc/apt/sources.list
+	echo "deb http://repo.ubports.com/ vivid main" >>$CHROOT/etc/apt/sources.list
 	do_chroot $CHROOT "apt -y install wget"
 	do_chroot $CHROOT "wget http://repo.ubports.com/keyring.gpg"
 	do_chroot $CHROOT "apt-key add keyring.gpg"
