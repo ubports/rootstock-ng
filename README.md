@@ -2,13 +2,15 @@
 
 Rootstock-NG is a pair of scripts to help you build and install an Ubuntu Touch rootfs.
 
+A copy of `adb` is included in this repository. This is the Linux x84-64 build, downloaded from [here](https://developer.android.com/studio/releases/platform-tools.html). rootstock-touch-install will automatically use this binary unless you specify the `-a` option.
+
 ## rootstock-touch-install
 
 rootstock-touch-install assists with installing an Ubuntu Touch rootfs on a device. 
 
 ### Usage
 
-Before using rootstock-touch-install, flash your hybris-boot.img to your device using `fastboot`. Then, boot into recovery.
+Before using rootstock-touch-install, flash your ubports-boot.img to your device using `fastboot`. Then, boot into recovery.
 
 In most cases, the following usage will install Ubuntu Touch to your device successfully. If it does not, continue on to Options.
 
@@ -41,3 +43,7 @@ For debugging purposes, it is recommended to keep this option unset. Keeping dat
 #### -w|--wipe-file
 
 Rewrites a file inside of the system image with ' ' (one space character).
+
+#### -a|--system-adb
+
+Uses the system adb binary rather than the one included in this repository.
