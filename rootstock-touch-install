@@ -278,4 +278,6 @@ cleanup_device
 echo "[done]"
 
 echo "rebooting device"
-# adb reboot
+adb reboot
+
+echo "Installation is complete."
