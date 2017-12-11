@@ -132,7 +132,7 @@ while [ $# -gt 0 ]; do
 			NATIVE_CHROOT=1
 			NATIVE_BOOTSTRAP_BIN="debootstrap --arch $HOSTARCH"
 			if [ $HOSTARCH = "armhf" ] || [ $HOSTARCH = "arm64" ]; then
-				NATIVE_MIRROR="${NATIVE_MIRROR:-http://ports.ubuntu.com/ubuntu-ports}"
+				NATIVE_MIRROR="${NATIVE_MIRROR:-http://old-releases.ubuntu.com/ubuntu/}"
 			else
 				NATIVE_MIRROR="${NATIVE_MIRROR:-http://archive.ubuntu.com/ubuntu}"
 			fi
@@ -163,7 +163,7 @@ case $ARCH in
 	armhf)
 		case $HOSTARCH in
 			armhf)
-				MIRROR="${MIRROR:-http://ports.ubuntu.com/ubuntu-ports}"
+				MIRROR="${MIRROR:-http://old-releases.ubuntu.com/ubuntu/}"
 				BOOTSTRAP_BIN="debootstrap --arch $ARCH --variant=minbase"
 				LB_BOOTSTRAP_QEMU_ARCHITECTURES=""
 				LB_BOOTSTRAP_QEMU_STATIC=""
@@ -171,7 +171,7 @@ case $ARCH in
 				;;
 			*)
 				[ ! "$(which qemu-debootstrap)" ] && echo "please install the qemu-user-static package" && exit 1
-				MIRROR="${MIRROR:-http://ports.ubuntu.com/ubuntu-ports}"
+				MIRROR="${MIRROR:-http://old-releases.ubuntu.com/ubuntu/}"
 				BOOTSTRAP_BIN="qemu-debootstrap --arch armhf --variant=minbase"
 				LB_BOOTSTRAP_QEMU_ARCHITECTURES="armhf"
 				LB_BOOTSTRAP_QEMU_STATIC="/usr/bin/qemu-arm-static"
@@ -181,7 +181,7 @@ case $ARCH in
 		arm64)
 			case $HOSTARCH in
 				arm64)
-					MIRROR="${MIRROR:-http://ports.ubuntu.com/ubuntu-ports}"
+					MIRROR="${MIRROR:-http://old-releases.ubuntu.com/ubuntu/}"
 					BOOTSTRAP_BIN="debootstrap --arch $ARCH --variant=minbase"
 					LB_BOOTSTRAP_QEMU_ARCHITECTURES=""
 					LB_BOOTSTRAP_QEMU_STATIC=""
@@ -189,7 +189,7 @@ case $ARCH in
 					;;
 				*)
 					[ ! "$(which qemu-debootstrap)" ] && echo "please install the qemu-user-static package" && exit 1
-					MIRROR="${MIRROR:-http://ports.ubuntu.com/ubuntu-ports}"
+					MIRROR="${MIRROR:-http://old-releases.ubuntu.com/ubuntu/}"
 					BOOTSTRAP_BIN="qemu-debootstrap --arch arm64 --variant=minbase"
 					LB_BOOTSTRAP_QEMU_ARCHITECTURES="arm64"
 					LB_BOOTSTRAP_QEMU_STATIC="/usr/bin/qemu-aarch64-static"
