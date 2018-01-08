@@ -80,7 +80,7 @@ prepare_ubuntu_system()
 	do_shell "mount -o loop /data/ubuntu.img /cache/system/"
 
 	# system.img is the deprecated name, but we make link to ubuntu.img
-	do_shell "ln /data/ubuntu.img /data/system.img"
+	do_shell "ln -s /data/ubuntu.img /data/system.img"
 }
 
 cleanup()
