@@ -27,9 +27,17 @@ SYSIMG=$2
 
 check_prereq()
 {
+
+	if [ ! $SYSTEM_ADB ]; then
+		# POSIX shell-only replacement for 'dirname'
+		a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd $a; pwd)
+		unset a
+		PATH="$BINDIR:$PATH"
+	fi
+	
 	if [ ! $(which make_ext4fs) ] || [ ! -x $(which simg2img) ] || \
 		[ ! -x $(which adb) ]; then
-		echo "please install the android-tools-fsutils and android-tools-adb packages" && exit 1
+		echo "please install the android-tools-fsutils and adb packages" && exit 1
 	fi
 }
 
@@ -41,10 +49,12 @@ do_shell()
 convert_android_img()
 {
 	if file $SYSIMG | grep -v ": Linux rev 1.0 ext4" >/dev/null; then
+	    echo "Converting sparse image to contiguious image"
 		simg2img $SYSIMG $WORKDIR/system.img.raw
 		mkdir $TMPMOUNT
 		mount -t ext4 -o loop $WORKDIR/system.img.raw $TMPMOUNT
-		make_ext4fs -l 120M $WORKDIR/system.img $TMPMOUNT >/dev/null 2>&1
+		IMAGE_SIZE=`wc -c < $SYSIMG`
+		make_ext4fs -l $IMAGE_SIZE $WORKDIR/system.img $TMPMOUNT
 		SYSIMAGE=$WORKDIR/system.img
 	else
 		SYSIMAGE=$SYSIMG
@@ -58,9 +68,6 @@ send_busybox() {
 
 check_mounts(){
 	MOUNTS=$(do_shell "cat /proc/mounts")
-	if ! echo $MOUNTS | grep -qs '/cache'; then
-		do_shell "mount /cache"
-	fi
 	if ! echo $MOUNTS | grep -qs '/data'; then
 		do_shell "mount /data"
 	fi
@@ -79,10 +86,10 @@ prepare_ubuntu_system()
 		echo -n "keep option set, keeping user data ... "
 	fi
 
-	do_shell "dd if=/dev/zero of=/data/ubuntu.img seek=500K bs=4096 count=0 >/dev/null 2>&1"
-	do_shell "mkfs.ext2 -F /data/ubuntu.img >/dev/null 2>&1"
-	do_shell "mkdir -p /cache/system"
-	do_shell "mount -o loop /data/ubuntu.img /cache/system/"
+	do_shell "dd if=/dev/zero of=/data/ubuntu.img seek=511K bs=4096 count=0 2>&1"
+	do_shell "mkfs.ext2 -F /data/ubuntu.img 2>&1"
+	do_shell "mkdir -p /data/recovery/system"
+	do_shell "mount -t ext4 -o loop /data/ubuntu.img /data/recovery/system/"
 
 	# system.img is the deprecated name, but we make link to ubuntu.img
 	do_shell "ln /data/ubuntu.img /data/system.img"
@@ -100,11 +107,12 @@ cleanup()
 cleanup_device()
 {
 	[ -e $WORKDIR/device-clean ] && return
-	do_shell "umount /cache/system/ 2>/dev/null && rm -rf /cache/system 2>/dev/null"
-	do_shell "rm -f /recovery/$TARBALL"
+	do_shell "umount /data/recovery/system/ && rm -rf /data/recovery/system 2>/dev/null"
+	do_shell "rm -f /data/$TARBALL"
 	if [ ! -z "$BUSYBOX_PUSH" ]; then
 		do_shell "rm $BUSYBOX 2>/dev/null"
 	fi
+	do_shell "sync"
 	[ -e $WORKDIR ] && touch $WORKDIR/device-clean 2>/dev/null || true
 }
 
@@ -118,7 +126,8 @@ usage()
 	-c|--custom		path to customization tarball (needs to be tar.xz)
 	-k|--keep-userdata	do not wipe user data on device
 	-w|--wipe-file		absolute path of a file inside the image to wipe (empty)
-	-b|--busybox		path to custom busybox (or toybox) to push/use on device"
+	-b|--busybox		path to custom busybox (or toybox) to push/use on device
+	-a|--system-adb		use the installed adb binary instead of the one included"
 	exit 1
 }
 
@@ -147,6 +156,8 @@ while [ $# -gt 0 ]; do
 		-b|--busybox)
 			[ -n "$2" ] && BUSYBOX_PUSH=$2 shift || usage
 			;;
+		-a|--system-adb)
+			SYSTEM_ADB=true
 	esac
 	shift
 done
@@ -206,13 +217,13 @@ if [ ! -z "$BUSYBOX_PUSH" ]; then
 fi
 
 echo -n "transfering rootfs tarball ... "
-adb push $TARPATH /recovery/ >/dev/null 2>&1
+adb push $TARPATH /data/ 2>&1
 echo "[done]"
 
 if [ ! -z "$CUST_TARPATH" ]; then
 	CUST_TARBALL=$(basename $CUST_TARPATH)
 	echo  -n "transferring custom tarball"
-	adb push $CUST_TARPATH /recovery/ >/dev/null 2>&1
+	adb push $CUST_TARPATH /data/ >/dev/null 2>&1
 	echo "[done]"
 fi
 
@@ -221,38 +232,45 @@ prepare_ubuntu_system
 echo "[done]"
 
 echo -n "unpacking rootfs tarball to system-image ... "
-do_shell "cd /cache/system && $BUSYBOX tar xf /recovery/$TARBALL"
-do_shell "mkdir -p /cache/system/android/firmware"
-do_shell "mkdir -p /cache/system/android/persist"
-do_shell "mkdir -p /cache/system/userdata"
-do_shell "[ -e /cache/system/SWAP.swap ] && mv /cache/system/SWAP.swap /data/SWAP.img"
+do_shell "cd /data/recovery/system && $BUSYBOX tar xf /data/$TARBALL"
+do_shell "mkdir -p /data/recovery/system/android/firmware"
+do_shell "mkdir -p /data/recovery/system/android/persist"
+do_shell "mkdir -p /data/recovery/system/userdata"
+do_shell "[ -e /data/recovery/system/SWAP.swap ] && mv /data/recovery/system/SWAP.swap /data/SWAP.img || exit 0"
 for link in cache data factory firmware persist system; do
-	do_shell "cd /cache/system && ln -s /android/$link $link"
-done
-do_shell "cd /cache/system/lib && ln -s /system/lib/modules modules"
-do_shell "cd /cache/system && ln -s /android/system/vendor vendor"
-do_shell "[ -e /cache/system/etc/mtab ] && rm /cache/system/etc/mtab"
-do_shell "cd /cache/system/etc && ln -s /proc/mounts mtab"
+    # We really don't care if this fails, so || true it is!
+	do_shell "cd /data/recovery/system && ln -s /android/$link $link" || true
+done || true
+do_shell "cd /data/recovery/system/lib && ln -s /system/lib/modules modules"
+do_shell "cd /data/recovery/system && ln -s /android/system/vendor vendor"
+do_shell "[ -e /data/recovery/system/etc/mtab ] && rm /data/recovery/system/etc/mtab || true"
+do_shell "cd /data/recovery/system/etc && ln -s /proc/mounts mtab"
 if [ ! -z "$WIPE_PATH" ]; then
-	do_shell "echo ' ' >/cache/system/$WIPE_PATH || true"
+	do_shell "echo ' ' >/data/recovery/system/$WIPE_PATH || true"
 fi
 echo "[done]"
 
-if [ ! -z "$CUST_TARPATH" ];then
+if [ ! -z "$CUST_TARPATH" ]; then
 	echo -n "unpacking custom tarball"
-	do_shell "mkdir -p /cache/system/custom"
-	do_shell "cd /cache && $BUSYBOX xzcat /recovery/$CUST_TARBALL | $BUSYBOX tar xf -"
+	do_shell "mkdir -p /data/recovery/system/custom"
+	do_shell "cd /data/recovery && $BUSYBOX xzcat /data/$CUST_TARBALL | $BUSYBOX tar xf -"
 	echo "[done]"
 fi
 
 echo -n "adding android system image to installation ... "
 convert_android_img
-ANDROID_DIR="/cache/system/var/lib/lxc/android/"
-adb push $SYSIMAGE $ANDROID_DIR >/dev/null 2>&1
+ANDROID_DIR="/data/recovery/system/var/lib/lxc/android/"
+adb push $SYSIMAGE $ANDROID_DIR 2>&1
 echo "[done]"
 
 echo -n "enabling Mir ... "
-do_shell "touch /cache/system/home/phablet/.display-mir"
+do_shell "touch /data/recovery/system/home/phablet/.display-mir"
+echo "[done]"
+
+echo -n "enabling SSH ... "
+do_shell "sed -i 's/PasswordAuthentication=no/PasswordAuthentication=yes/g' /data/recovery/system/etc/init/ssh.override"
+do_shell "sed -i 's/manual/start on startup/g' /data/recovery/system/etc/init/ssh.override"
+do_shell "$BUSYBOX chroot /data/recovery/system/ /bin/bash -c '/usr/bin/passwd phablet'"
 echo "[done]"
 
 echo -n "cleaning up on device ... "
@@ -261,3 +279,5 @@ echo "[done]"
 
 echo "rebooting device"
 adb reboot
+
+echo "Installation is complete."
