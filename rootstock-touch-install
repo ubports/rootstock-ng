@@ -221,7 +221,7 @@ prepare_ubuntu_system
 echo "[done]"
 
 echo -n "unpacking rootfs tarball to system-image ... "
-do_shell "cd /cache/system && $BUSYBOX tar xf /recovery/$TARBALL"
+do_shell "cd /cache/system && $BUSYBOX tar xzf /recovery/$TARBALL"
 do_shell "mkdir -p /cache/system/android/firmware"
 do_shell "mkdir -p /cache/system/android/persist"
 do_shell "mkdir -p /cache/system/userdata"
