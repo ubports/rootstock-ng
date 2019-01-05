@@ -209,6 +209,11 @@ case $PROJECT_ in
 		EXTRA_PPAS=""
 		PROJECT="ubuntu-touch"
 		;;
+	ubports-touch-hybris)
+		EXTRA_PPAS=""
+		SUBPROJECT="hybris"
+		PROJECT="ubuntu-touch"
+		;;
 esac
 
 BUILDOPTS="SUBPROJECT=${SUBPROJECT} \
