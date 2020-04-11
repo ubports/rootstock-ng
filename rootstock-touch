@@ -285,6 +285,9 @@ build_chroot()
 	fi
 	echo "deb http://repo.ubports.com/ xenial main" >>$CHROOT/etc/apt/sources.list
 	echo "deb http://repo.ubports.com/ xenial_-_edge main" >>$CHROOT/etc/apt/sources.list
+	echo "deb http://repo.ubports.com/ xenial_-_edge_-_mesa main" >>$CHROOT/etc/apt/sources.list
+	echo "deb http://repo.ubports.com/ xenial_-_edge_-_wayland main" >>$CHROOT/etc/apt/sources.list
+	echo "deb http://repo.ubports.com/ xenial_-_edge_-_pine main" >>$CHROOT/etc/apt/sources.list
 	do_chroot $CHROOT "apt -y install wget"
 	do_chroot $CHROOT "wget http://repo.ubports.com/keyring.gpg"
 	do_chroot $CHROOT "apt-key add keyring.gpg"
