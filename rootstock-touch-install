@@ -226,7 +226,7 @@ do_shell "mkdir -p /cache/system/android/firmware"
 do_shell "mkdir -p /cache/system/android/persist"
 do_shell "mkdir -p /cache/system/userdata"
 do_shell "[ -e /cache/system/SWAP.swap ] && mv /cache/system/SWAP.swap /data/SWAP.img"
-for link in cache data factory firmware persist system; do
+for link in cache data factory firmware persist system odm; do
 	do_shell "cd /cache/system && ln -s /android/$link $link"
 done
 do_shell "cd /cache/system/lib && ln -s /system/lib/modules modules"
